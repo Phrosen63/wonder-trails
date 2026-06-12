@@ -41,22 +41,36 @@ fullscreenBtn.addEventListener('click', () => {
 });
 
 // --- Render loop ---
-function render() {
+let lastTime = performance.now();
+
+function render(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.05); // clamp to avoid big jumps on tab switch
+  lastTime = now;
+
   const w = window.innerWidth;
   const h = window.innerHeight;
 
   // Clear the frame
   ctx.clearRect(0, 0, w, h);
 
-  // Draw a simple marker at the current pointer position
+  // Spawn new particles while the pointer is "down"/touching
   if (pointer.active) {
-    ctx.beginPath();
-    ctx.arc(pointer.x, pointer.y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffd700';
-    ctx.fill();
+    for (let i = 0; i < PARTICLE_CONFIG.spawnPerMove; i++) {
+      spawnParticle(pointer.x, pointer.y);
+    }
+    for (let i = 0; i < PAINT_CONFIG.spawnPerMove; i++) {
+      spawnPaintParticle(pointer.x, pointer.y);
+    }
   }
+
+  updatePaintParticles(dt);
+  updateParticles(dt);
+
+  // Paint particles drawn first so stars appear on top of the color wash
+  drawPaintParticles(ctx);
+  drawParticles(ctx);
 
   requestAnimationFrame(render);
 }
 
-render();
+requestAnimationFrame(render);
