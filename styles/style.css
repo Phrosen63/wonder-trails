@@ -19,20 +19,6 @@ body {
   background: #111;
 }
 
-#debug {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  color: #fff;
-  font-family: monospace;
-  font-size: 14px;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 6px 10px;
-  border-radius: 6px;
-  pointer-events: none; /* let touches pass through to canvas */
-  white-space: pre;
-}
-
 #fullscreen-btn {
   position: absolute;
   top: 8px;

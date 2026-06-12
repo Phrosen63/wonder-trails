@@ -1,8 +1,3 @@
-// pointer.js
-// Tracks the current pointer (mouse or touch) position and exposes it
-// globally as `window.pointer`. Also updates the on-screen debug overlay,
-// since console.log isn't visible on a phone.
-
 window.pointer = {
   x: 0,
   y: 0,
@@ -10,22 +5,14 @@ window.pointer = {
 };
 
 (function () {
-  const debugEl = document.getElementById('debug');
-
   function isUIElement(target) {
     return !!target.closest('#effect-picker, #fullscreen-btn');
-  }
-
-  function updateDebug() {
-    debugEl.textContent =
-      `x: ${pointer.x.toFixed(1)}\n` + `y: ${pointer.y.toFixed(1)}\n` + `active: ${pointer.active}`;
   }
 
   function setPointer(x, y, active) {
     pointer.x = x;
     pointer.y = y;
     pointer.active = active;
-    updateDebug();
   }
 
   // --- Mouse events (for desktop development) ---
@@ -83,7 +70,4 @@ window.pointer = {
     },
     { passive: true },
   );
-
-  // Initial debug paint
-  updateDebug();
 })();
