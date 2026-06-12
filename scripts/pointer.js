@@ -12,6 +12,10 @@ window.pointer = {
 (function () {
   const debugEl = document.getElementById('debug');
 
+  function isUIElement(target) {
+    return !!target.closest('#effect-picker, #fullscreen-btn');
+  }
+
   function updateDebug() {
     debugEl.textContent =
       `x: ${pointer.x.toFixed(1)}\n` + `y: ${pointer.y.toFixed(1)}\n` + `active: ${pointer.active}`;
@@ -26,10 +30,14 @@ window.pointer = {
 
   // --- Mouse events (for desktop development) ---
   window.addEventListener('mousemove', (e) => {
+    if (isUIElement(e.target)) return;
+
     setPointer(e.clientX, e.clientY, pointer.active);
   });
 
   window.addEventListener('mousedown', (e) => {
+    if (isUIElement(e.target)) return;
+
     setPointer(e.clientX, e.clientY, true);
   });
 
@@ -43,6 +51,7 @@ window.pointer = {
   window.addEventListener(
     'touchstart',
     (e) => {
+      if (isUIElement(e.target)) return;
       const t = e.touches[0];
       setPointer(t.clientX, t.clientY, true);
     },
@@ -52,6 +61,7 @@ window.pointer = {
   window.addEventListener(
     'touchmove',
     (e) => {
+      if (isUIElement(e.target)) return;
       const t = e.touches[0];
       setPointer(t.clientX, t.clientY, true);
     },
