@@ -1,0 +1,21 @@
+@media (max-width: 768px) {
+  #ui-bar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #effect-picker {
+    position: absolute;
+    top: 70px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 10px;
+  }
+}

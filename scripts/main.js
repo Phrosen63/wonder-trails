@@ -1,6 +1,15 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+const bgPicker = document.getElementById('bg-picker');
+let backgroundColor = '#000000';
+document.body.style.background = backgroundColor;
+
+bgPicker.addEventListener('input', (e) => {
+  backgroundColor = e.target.value;
+  document.body.style.background = backgroundColor;
+});
+
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
 
@@ -47,7 +56,8 @@ function render(now) {
 
   lastTime = now;
 
-  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
   if (pointer.active) {
     EffectManager.spawn(pointer.x, pointer.y);

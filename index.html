@@ -4,11 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wonder Trails</title>
-    <link rel="stylesheet" href="styles/style.css" />
+    <link rel="stylesheet" href="styles/base.css" />
+    <link rel="stylesheet" href="styles/canvas.css" />
+    <link rel="stylesheet" href="styles/ui.css" />
+    <link rel="stylesheet" href="styles/responsive.css" />
   </head>
   <body>
     <canvas id="canvas"></canvas>
-    <button id="fullscreen-btn">Fullscreen</button>
+    <div id="ui-bar">
+      <button id="fullscreen-btn">Fullscreen</button>
+      <input id="bg-picker" type="color" value="#000000" />
+    </div>
 
     <div id="effect-picker">
       <button data-effect="stars">⭐</button>

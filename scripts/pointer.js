@@ -6,7 +6,7 @@ window.pointer = {
 
 (function () {
   function isUIElement(target) {
-    return !!target.closest('#effect-picker, #fullscreen-btn');
+    return !!target.closest('#effect-picker, #fullscreen-btn, #ui-bar');
   }
 
   function setPointer(x, y, active) {
