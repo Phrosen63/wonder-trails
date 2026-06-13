@@ -1,39 +1,53 @@
 (function () {
   const particles = [];
+  const COLS = 200;
+  let colWidth = 1;
+  let heights = [];
+  let canvasW = window.innerWidth;
+  let canvasH = window.innerHeight;
+
+  const MAX_PILE_FRACTION = 0.35;
 
   const CONFIG =
     window.innerWidth <= 768
       ? {
           spawnPerFrame: 3,
-          minSize: 2,
+          minSize: 3,
           maxSize: 6,
-          minSpeed: 20,
-          maxSpeed: 60,
-          windStrength: 25,
-          windVariation: 0.8,
-          gravity: 18,
-          maxParticles: 350,
+          minLife: 3,
+          maxLife: 5.5,
+          spread: 43,
+          windStrength: 18,
+          gravity: 38,
+          maxParticles: 600,
         }
       : {
-          spawnPerFrame: 4,
-          minSize: 2,
-          maxSize: 7,
-          minSpeed: 20,
-          maxSpeed: 60,
-          windStrength: 30,
-          windVariation: 1.0,
-          gravity: 18,
-          maxParticles: 450,
+          spawnPerFrame: 5,
+          minSize: 3,
+          maxSize: 9,
+          minLife: 4.0,
+          maxLife: 7.0,
+          spread: 100,
+          windStrength: 25,
+          gravity: 40,
+          maxParticles: 600,
         };
 
-  let windOffset = 0;
+  function initHeights() {
+    canvasW = window.innerWidth;
+    canvasH = window.innerHeight;
+    colWidth = canvasW / COLS;
+    heights = new Array(COLS).fill(0);
+  }
 
   function activate() {
     particles.length = 0;
+    initHeights();
   }
 
   function deactivate() {
     particles.length = 0;
+    heights.fill(0);
   }
 
   function randRange(min, max) {
@@ -43,36 +57,56 @@
   function spawn(x, y) {
     for (let i = 0; i < CONFIG.spawnPerFrame; i++) {
       particles.push({
-        x: x + randRange(-30, 30),
-        y: y + randRange(-10, 10),
-        vx: randRange(-10, 10),
-        vy: randRange(CONFIG.minSpeed, CONFIG.maxSpeed),
+        x: x + randRange(-CONFIG.spread, CONFIG.spread),
+        y: y + randRange(-CONFIG.spread * 0.3, CONFIG.spread * 0.3),
+        vx: randRange(-CONFIG.windStrength, CONFIG.windStrength),
+        vy: randRange(-20, 10),
         size: randRange(CONFIG.minSize, CONFIG.maxSize),
         phase: Math.random() * Math.PI * 2,
-        life: 0,
+        age: 0,
+        life: randRange(CONFIG.minLife, CONFIG.maxLife),
       });
     }
-
     if (particles.length > CONFIG.maxParticles) {
       particles.splice(0, particles.length - CONFIG.maxParticles);
     }
   }
 
+  function settle(x, amount) {
+    const col = Math.floor(x / colWidth);
+    const maxPile = canvasH * MAX_PILE_FRACTION;
+    const spread = 3;
+    for (let dc = -spread; dc <= spread; dc++) {
+      const c = col + dc;
+      if (c < 0 || c >= COLS) continue;
+      const weight = 1 - Math.abs(dc) / (spread + 1);
+      heights[c] = Math.min(maxPile, heights[c] + amount * weight * 0.4);
+    }
+
+    if (col > 0) heights[col - 1] = (heights[col - 1] + heights[col]) / 2;
+    if (col < COLS - 1) heights[col + 1] = (heights[col + 1] + heights[col]) / 2;
+  }
+
   function update(dt) {
-    windOffset += dt * 0.6;
-
-    const wind = Math.sin(windOffset) * CONFIG.windStrength;
-
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-
-      p.life += dt;
+      p.age += dt;
+      if (p.age >= p.life) {
+        settle(p.x, p.size * 0.6);
+        particles.splice(i, 1);
+        continue;
+      }
       p.vy += CONFIG.gravity * dt;
-      const flutter = Math.sin(p.phase + p.life * 3) * CONFIG.windVariation;
-      p.x += (p.vx + wind * flutter) * dt;
+      const flutter = Math.sin(p.phase + p.age * 2.5) * 1.5;
+      p.x += (p.vx + flutter) * dt;
       p.y += p.vy * dt;
 
-      if (p.y > window.innerHeight + 50) {
+      const col = Math.clamp
+        ? Math.clamp(Math.floor(p.x / colWidth), 0, COLS - 1)
+        : Math.max(0, Math.min(COLS - 1, Math.floor(p.x / colWidth)));
+      const surfaceY = canvasH - heights[col];
+      if (p.y + p.size >= surfaceY) {
+        settle(p.x, p.size * 0.8);
         particles.splice(i, 1);
       }
     }
@@ -83,16 +117,56 @@
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
 
     for (const p of particles) {
-      const alpha = Math.max(0, 1 - p.life / 8);
-      ctx.globalAlpha = alpha;
+      const lifeRatio = 1 - p.age / p.life;
+      ctx.globalAlpha = lifeRatio * 0.85;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * lifeRatio, 0, Math.PI * 2);
       ctx.fill();
     }
 
     ctx.globalAlpha = 1;
     ctx.restore();
+
+    // draw snow pile
+    if (heights.some((h) => h > 0)) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, canvasH);
+      for (let c = 0; c < COLS; c++) {
+        const x = c * colWidth;
+        const y = canvasH - heights[c];
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(canvasW, canvasH);
+      ctx.closePath();
+
+      const gradient = ctx.createLinearGradient(
+        0,
+        canvasH - canvasH * MAX_PILE_FRACTION,
+        0,
+        canvasH,
+      );
+      gradient.addColorStop(0, 'rgba(200, 220, 255, 0.85)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // soft top edge
+      ctx.beginPath();
+      ctx.moveTo(0, canvasH - heights[0]);
+      for (let c = 1; c < COLS; c++) {
+        const x = c * colWidth;
+        const y = canvasH - heights[c];
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
+
+  window.addEventListener('resize', initHeights);
 
   EffectManager.register('snowfall', {
     activate,
