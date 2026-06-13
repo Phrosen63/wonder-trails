@@ -1,13 +1,22 @@
 (function () {
   const particles = [];
 
-  const CONFIG = {
-    minSize: 12,
-    maxSize: 70,
-    minLife: 2.5,
-    maxLife: 4.4,
-    spawnPerFrame: 1,
-  };
+  const CONFIG =
+    window.innerWidth <= 768
+      ? {
+          minSize: 8,
+          maxSize: 40,
+          minLife: 2.5,
+          maxLife: 4.4,
+          spawnPerFrame: 1,
+        }
+      : {
+          minSize: 10,
+          maxSize: 55,
+          minLife: 2.5,
+          maxLife: 4.4,
+          spawnPerFrame: 1,
+        };
 
   function randRange(min, max) {
     return min + Math.random() * (max - min);

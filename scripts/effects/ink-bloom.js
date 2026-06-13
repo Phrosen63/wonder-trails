@@ -1,14 +1,24 @@
 (function () {
   const blooms = [];
 
-  const CONFIG = {
-    spawnPerTap: 1,
-    minRadius: 20,
-    maxRadius: 80,
-    expansionSpeed: 18,
-    fadeSpeed: 0.25,
-    hueSpeed: 12,
-  };
+  const CONFIG =
+    window.innerWidth <= 768
+      ? {
+          spawnPerTap: 1,
+          minRadius: 12,
+          maxRadius: 45,
+          expansionSpeed: 14,
+          fadeSpeed: 0.25,
+          hueSpeed: 12,
+        }
+      : {
+          spawnPerTap: 1,
+          minRadius: 16,
+          maxRadius: 60,
+          expansionSpeed: 16,
+          fadeSpeed: 0.25,
+          hueSpeed: 12,
+        };
 
   let hue = 0;
 

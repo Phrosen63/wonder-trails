@@ -1,17 +1,30 @@
 (function () {
   const particles = [];
 
-  const CONFIG = {
-    spawnPerFrame: 2,
-    minSize: 2,
-    maxSize: 6,
-    minSpeed: 20,
-    maxSpeed: 60,
-    windStrength: 25,
-    windVariation: 0.8,
-    gravity: 18,
-    maxParticles: 250,
-  };
+  const CONFIG =
+    window.innerWidth <= 768
+      ? {
+          spawnPerFrame: 3,
+          minSize: 2,
+          maxSize: 6,
+          minSpeed: 20,
+          maxSpeed: 60,
+          windStrength: 25,
+          windVariation: 0.8,
+          gravity: 18,
+          maxParticles: 350,
+        }
+      : {
+          spawnPerFrame: 4,
+          minSize: 2,
+          maxSize: 7,
+          minSpeed: 20,
+          maxSpeed: 60,
+          windStrength: 30,
+          windVariation: 1.0,
+          gravity: 18,
+          maxParticles: 450,
+        };
 
   let windOffset = 0;
 

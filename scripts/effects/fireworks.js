@@ -1,15 +1,26 @@
 (function () {
   const particles = [];
 
-  const CONFIG = {
-    particlesPerBurst: 20,
-    minSpeed: 80,
-    maxSpeed: 250,
-    minLife: 0.8,
-    maxLife: 1.8,
-    minSize: 1,
-    maxSize: 3,
-  };
+  const CONFIG =
+    window.innerWidth <= 768
+      ? {
+          particlesPerBurst: 20,
+          minSpeed: 80,
+          maxSpeed: 250,
+          minLife: 0.8,
+          maxLife: 1.8,
+          minSize: 1,
+          maxSize: 3,
+        }
+      : {
+          particlesPerBurst: 28,
+          minSpeed: 110,
+          maxSpeed: 320,
+          minLife: 0.9,
+          maxLife: 2.0,
+          minSize: 1.5,
+          maxSize: 4,
+        };
 
   function randRange(min, max) {
     return min + Math.random() * (max - min);

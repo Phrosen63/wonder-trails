@@ -11,11 +11,24 @@
   #effect-picker {
     position: absolute;
     top: 70px;
-    left: 8px;
-    right: 8px;
+    left: 0;
+    right: 0;
     transform: none;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: flex-start;
     gap: 10px;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 4px 8px 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #effect-picker::-webkit-scrollbar {
+    display: none;
+  }
+
+  #effect-picker button {
+    flex-shrink: 0;
   }
 }

@@ -1,16 +1,28 @@
 (function () {
   const particles = [];
 
-  const CONFIG = {
-    minSize: 40,
-    maxSize: 90,
-    minLife: 2.5,
-    maxLife: 4.5,
-    spawnPerFrame: 1,
-    hueSpeed: 40,
-    saturation: 80,
-    lightness: 60,
-  };
+  const CONFIG =
+    window.innerWidth <= 768
+      ? {
+          minSize: 20,
+          maxSize: 50,
+          minLife: 2.5,
+          maxLife: 4.5,
+          spawnPerFrame: 1,
+          hueSpeed: 40,
+          saturation: 80,
+          lightness: 60,
+        }
+      : {
+          minSize: 35,
+          maxSize: 80,
+          minLife: 2.5,
+          maxLife: 4.5,
+          spawnPerFrame: 1,
+          hueSpeed: 40,
+          saturation: 80,
+          lightness: 60,
+        };
 
   let currentHue = 0;
 
