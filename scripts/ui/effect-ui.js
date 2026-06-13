@@ -7,6 +7,7 @@
     ['rainbow', '🌈'],
     ['snowfall', '❄️'],
     ['ink-bloom', '🫟'],
+    ['magnet', '🧲'],
   ];
 
   const container = document.getElementById('effect-picker');

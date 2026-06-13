@@ -32,12 +32,12 @@
 
   function update(dt) {
     if (!activeEffect) return;
-    activeEffect.update(dt);
+    activeEffect.update(dt, window.pointer);
   }
 
   function draw(ctx) {
     if (!activeEffect) return;
-    activeEffect.draw(ctx);
+    activeEffect.draw(ctx, window.pointer);
   }
 
   window.EffectManager = {

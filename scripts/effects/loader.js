@@ -7,6 +7,7 @@
     'rainbow.js',
     'snowfall.js',
     'ink-bloom.js',
+    'magnet.js',
   ];
 
   const base = 'scripts/effects/';
