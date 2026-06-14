@@ -55,7 +55,7 @@
       });
     }
 
-    emit('sound', { id: 'firework-burst', x, y, intensity: 1 });
+    // emit('sound', { id: 'firework-burst', x, y, intensity: 1 });
   }
 
   function update(dt) {
