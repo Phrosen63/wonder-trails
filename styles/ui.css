@@ -50,3 +50,10 @@
   cursor: pointer;
   touch-action: manipulation;
 }
+
+#effect-picker button.active {
+  box-shadow:
+    0 0 0 3px #c006b0,
+    0 0 14px 4px rgba(255, 255, 255, 0.7);
+  transform: scale(1.05);
+}

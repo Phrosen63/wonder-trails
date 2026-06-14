@@ -11,6 +11,7 @@
   ];
 
   const container = document.getElementById('effect-picker');
+  const buttons = {};
 
   for (const [name, icon] of effects) {
     const btn = document.createElement('button');
@@ -22,5 +23,15 @@
     });
 
     container.appendChild(btn);
+    buttons[name] = btn;
   }
+
+  function setActive(name) {
+    for (const key in buttons) {
+      buttons[key].classList.toggle('active', key === name);
+    }
+  }
+
+  EffectManager.on('effect-change', ({ name }) => setActive(name));
+  setActive(effects[0][0]);
 })();
