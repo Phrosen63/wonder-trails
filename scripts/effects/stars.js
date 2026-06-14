@@ -12,6 +12,8 @@
     colors: ['#FFD700', '#FFEC8B', '#FFF8DC', '#FFA500'],
   };
 
+  let soundCooldown = 0;
+
   function activate() {}
 
   function deactivate() {
@@ -40,13 +42,18 @@
     });
   }
 
-  function spawn(x, y) {
+  function spawn(x, y, emit) {
     for (let i = 0; i < CONFIG.spawnPerFrame; i++) {
       spawnParticle(x, y);
+    }
+    if (emit && soundCooldown <= 0) {
+      emit('sound', { id: 'star-sparkle', x, y });
+      soundCooldown = 0.08;
     }
   }
 
   function update(dt) {
+    soundCooldown -= dt;
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
 

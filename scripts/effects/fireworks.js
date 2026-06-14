@@ -54,6 +54,8 @@
         life: randRange(CONFIG.minLife, CONFIG.maxLife),
       });
     }
+
+    emit('sound', { id: 'firework-burst', x, y, intensity: 1 });
   }
 
   function update(dt) {

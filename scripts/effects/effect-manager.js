@@ -1,7 +1,22 @@
 (function () {
   const effects = {};
-
   let activeEffect = null;
+  const listeners = {};
+
+  function on(eventName, callback) {
+    (listeners[eventName] = listeners[eventName] || []).push(callback);
+  }
+
+  function off(eventName, callback) {
+    if (!listeners[eventName]) return;
+    listeners[eventName] = listeners[eventName].filter((cb) => cb !== callback);
+  }
+
+  function emit(eventName, data) {
+    const cbs = listeners[eventName];
+    if (!cbs) return;
+    for (const cb of cbs) cb(data);
+  }
 
   function register(name, effect) {
     effects[name] = effect;
@@ -16,23 +31,24 @@
     if (!nextEffect) return;
 
     if (activeEffect && typeof activeEffect.deactivate === 'function') {
-      activeEffect.deactivate();
+      activeEffect.deactivate(emit);
     }
 
     activeEffect = nextEffect;
     if (typeof activeEffect.activate === 'function') {
-      activeEffect.activate();
+      activeEffect.activate(emit);
     }
+    emit('effect-change', { name });
   }
 
   function spawn(x, y) {
     if (!activeEffect) return;
-    activeEffect.spawn(x, y);
+    activeEffect.spawn(x, y, emit);
   }
 
   function update(dt) {
     if (!activeEffect) return;
-    activeEffect.update(dt, window.pointer);
+    activeEffect.update(dt, window.pointer, emit);
   }
 
   function draw(ctx) {
@@ -46,5 +62,7 @@
     spawn,
     update,
     draw,
+    on,
+    off,
   };
 })();

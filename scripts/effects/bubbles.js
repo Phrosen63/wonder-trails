@@ -32,7 +32,7 @@
     particles.length = 0;
   }
 
-  function spawn(x, y) {
+  function spawn(x, y, emit) {
     for (let i = 0; i < CONFIG.spawnPerFrame; i++) {
       particles.push({
         x: x + randRange(-50, 50),
@@ -45,12 +45,12 @@
         life: randRange(CONFIG.minLife, CONFIG.maxLife),
       });
     }
+    if (emit) emit('sound', { id: 'bubble-pop', x, y });
   }
 
-  function update(dt) {
+  function update(dt, pointer) {
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-
       p.age += dt;
 
       if (p.age >= p.life) {
@@ -60,7 +60,6 @@
 
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-
       p.vx *= 0.995;
       p.vy *= 0.995;
     }
