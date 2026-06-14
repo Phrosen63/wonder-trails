@@ -5,22 +5,22 @@
       ? {
           count: 180,
           magnetRadius: 140,
-          attractForce: 2300,
+          attractForce: 4000,
           repelForce: 17,
           damping: 0.86,
           drift: 11,
-          minSize: 1.7,
-          maxSize: 3.7,
+          minSize: 2.2,
+          maxSize: 4.8,
         }
       : {
           count: 300,
           magnetRadius: 225,
-          attractForce: 2600,
+          attractForce: 5000,
           repelForce: 20,
           damping: 0.86,
           drift: 14,
-          minSize: 1.8,
-          maxSize: 4.3,
+          minSize: 2.4,
+          maxSize: 5.6,
         };
 
   function randRange(min, max) {
@@ -101,8 +101,8 @@
         ctx.moveTo(-tailLen, 0);
         ctx.lineTo(s.size * 0.5, 0);
         const alpha = 0.4 + pull * 0.5;
-        const light = Math.round(55 + pull * 40);
-        ctx.strokeStyle = `hsla(200, 20%, ${light}%, ${alpha * s.brightness})`;
+        const light = Math.round(25 + pull * 30);
+        ctx.strokeStyle = `hsla(25, 45%, ${light}%, ${alpha * s.brightness})`;
         ctx.lineWidth = s.size * (1 + pull * 0.8);
         ctx.lineCap = 'round';
         ctx.stroke();
@@ -110,8 +110,8 @@
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size * (1 + pull * 0.6), 0, Math.PI * 2);
         const alpha = 0.35 + pull * 0.55;
-        const light = Math.round(55 + pull * 40);
-        ctx.fillStyle = `hsla(200, 15%, ${light}%, ${alpha * s.brightness})`;
+        const light = Math.round(25 + pull * 30);
+        ctx.fillStyle = `hsla(25, 45%, ${light}%, ${alpha * s.brightness})`;
         ctx.fill();
       }
 
