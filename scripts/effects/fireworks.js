@@ -1,6 +1,5 @@
 (function () {
   const particles = [];
-
   const CONFIG =
     window.innerWidth <= 768
       ? {
@@ -11,6 +10,14 @@
           maxLife: 1.8,
           minSize: 1,
           maxSize: 3,
+          maxChargeTime: 1.4,
+          tapThreshold: 0.15,
+          minBursts: 1,
+          maxBursts: 12,
+          chargeBurstInterval: 0.3,
+          autoReleaseDelay: 0.5,
+          minStragglers: 1,
+          maxStragglers: 3,
         }
       : {
           particlesPerBurst: 28,
@@ -20,29 +27,56 @@
           maxLife: 2.0,
           minSize: 1.5,
           maxSize: 4,
+          maxChargeTime: 1.6,
+          tapThreshold: 0.15,
+          minBursts: 1,
+          maxBursts: 25,
+          chargeBurstInterval: 0.3,
+          autoReleaseDelay: 0.5,
+          minStragglers: 2,
+          maxStragglers: 5,
         };
+  let chargeTime = 0;
+  let charging = false;
+  let chargeTickTimer = CONFIG.chargeBurstInterval;
+  let autoReleaseTimer = 0;
+  let hasAutoReleased = false;
+  const stragglers = [];
 
   function randRange(min, max) {
     return min + Math.random() * (max - min);
   }
-
   function randomHue() {
     return Math.floor(Math.random() * 360);
   }
-
-  function activate() {}
-
+  function randomScreenPos(margin) {
+    return {
+      x: randRange(margin, window.innerWidth - margin),
+      y: randRange(margin, window.innerHeight - margin),
+    };
+  }
+  function activate() {
+    chargeTime = 0;
+    charging = false;
+    chargeTickTimer = CONFIG.chargeBurstInterval;
+    autoReleaseTimer = 0;
+    hasAutoReleased = false;
+    stragglers.length = 0;
+  }
   function deactivate() {
     particles.length = 0;
+    chargeTime = 0;
+    charging = false;
+    chargeTickTimer = CONFIG.chargeBurstInterval;
+    autoReleaseTimer = 0;
+    hasAutoReleased = false;
+    stragglers.length = 0;
   }
-
-  function spawn(x, y) {
+  function createBurst(x, y) {
     const hue = randomHue();
-
     for (let i = 0; i < CONFIG.particlesPerBurst; i++) {
       const angle = (Math.PI * 2 * i) / CONFIG.particlesPerBurst;
       const speed = randRange(CONFIG.minSpeed, CONFIG.maxSpeed);
-
       particles.push({
         x,
         y,
@@ -54,36 +88,101 @@
         life: randRange(CONFIG.minLife, CONFIG.maxLife),
       });
     }
-
-    // emit('sound', { id: 'firework-burst', x, y, intensity: 1 });
   }
+  function spawn() {
+    // No-op: handled by tap/charge logic in update().
+  }
+  function triggerCascade(emit) {
+    const ratio = chargeTime / CONFIG.maxChargeTime;
+    const burstCount = Math.round(CONFIG.minBursts + (CONFIG.maxBursts - CONFIG.minBursts) * ratio);
+    const margin = 60;
+    for (let i = 0; i < burstCount; i++) {
+      const { x, y } = randomScreenPos(margin);
+      createBurst(x, y);
+    }
+    if (emit) emit('sound', { id: 'firework-cascade', intensity: ratio });
+  }
+  function scheduleStragglers() {
+    const margin = 60;
+    const count = Math.round(randRange(CONFIG.minStragglers, CONFIG.maxStragglers + 1));
+    for (let i = 0; i < count; i++) {
+      const { x, y } = randomScreenPos(margin);
+      stragglers.push({ x, y, timer: randRange(0.15, 0.7) });
+    }
+  }
+  function update(dt, pointer, emit) {
+    if (pointer.active && !hasAutoReleased) {
+      charging = true;
+      chargeTime = Math.min(chargeTime + dt, CONFIG.maxChargeTime);
 
-  function update(dt) {
+      // Small random fireworks while charging.
+      chargeTickTimer -= dt;
+      if (chargeTickTimer <= 0) {
+        const { x, y } = randomScreenPos(60);
+        createBurst(x, y);
+        chargeTickTimer += CONFIG.chargeBurstInterval;
+      }
+
+      // Auto-release if fully charged and held a bit longer.
+      if (chargeTime >= CONFIG.maxChargeTime) {
+        autoReleaseTimer += dt;
+        if (autoReleaseTimer >= CONFIG.autoReleaseDelay) {
+          triggerCascade(emit);
+          scheduleStragglers();
+          hasAutoReleased = true;
+          charging = false;
+          chargeTime = 0;
+          autoReleaseTimer = 0;
+        }
+      }
+    } else if (!pointer.active) {
+      if (charging) {
+        if (chargeTime < CONFIG.tapThreshold) {
+          // Quick tap: a single firework right where the user clicked.
+          createBurst(pointer.x, pointer.y);
+          if (emit)
+            emit('sound', { id: 'firework-burst', x: pointer.x, y: pointer.y, intensity: 1 });
+        } else {
+          triggerCascade(emit);
+          scheduleStragglers();
+        }
+      }
+      charging = false;
+      chargeTime = 0;
+      chargeTickTimer = CONFIG.chargeBurstInterval;
+      autoReleaseTimer = 0;
+      hasAutoReleased = false;
+    }
+    // else: pointer still down after auto-release — wait for lift-off to reset.
+
+    // Fire off any pending stragglers.
+    for (let i = stragglers.length - 1; i >= 0; i--) {
+      const s = stragglers[i];
+      s.timer -= dt;
+      if (s.timer <= 0) {
+        createBurst(s.x, s.y);
+        stragglers.splice(i, 1);
+      }
+    }
+
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-
       p.age += dt;
-
       if (p.age >= p.life) {
         particles.splice(i, 1);
         continue;
       }
-
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-
       // gravity
       p.vy += 120 * dt;
       p.vx *= 0.99;
       p.vy *= 0.99;
     }
   }
-
-  function draw(ctx) {
+  function draw(ctx, pointer) {
     for (const p of particles) {
       const lifeRatio = 1 - p.age / p.life;
-      const tailLength = 8;
-
       ctx.save();
       ctx.globalAlpha = lifeRatio;
       ctx.strokeStyle = `hsl(${p.hue}, 100%, 70%)`;
@@ -94,8 +193,18 @@
       ctx.stroke();
       ctx.restore();
     }
+    if (charging && pointer.active && chargeTime >= CONFIG.tapThreshold) {
+      const ratio = chargeTime / CONFIG.maxChargeTime;
+      ctx.save();
+      ctx.globalAlpha = 0.5 + ratio * 0.5;
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, 10 + ratio * 40, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsl(${(performance.now() / 5) % 360}, 100%, 60%)`;
+      ctx.lineWidth = 3 + ratio * 5;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
-
   EffectManager.register('fireworks', {
     activate,
     deactivate,
