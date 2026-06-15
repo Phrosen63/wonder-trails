@@ -120,6 +120,7 @@
       if (chargeTickTimer <= 0) {
         const { x, y } = randomScreenPos(60);
         createBurst(x, y);
+        if (emit) emit('sound', { id: 'fireworks-pop', x, y, intensity: 0.6 });
         chargeTickTimer += CONFIG.chargeBurstInterval;
       }
 
@@ -141,7 +142,7 @@
           // Quick tap: a single firework right where the user clicked.
           createBurst(pointer.x, pointer.y);
           if (emit)
-            emit('sound', { id: 'firework-burst', x: pointer.x, y: pointer.y, intensity: 1 });
+            emit('sound', { id: 'fireworks-pop', x: pointer.x, y: pointer.y, intensity: 1 });
         } else {
           triggerCascade(emit);
           scheduleStragglers();
@@ -161,6 +162,7 @@
       s.timer -= dt;
       if (s.timer <= 0) {
         createBurst(s.x, s.y);
+        if (emit) emit('sound', { id: 'fireworks-pop', x: s.x, y: s.y, intensity: 0.6 });
         stragglers.splice(i, 1);
       }
     }

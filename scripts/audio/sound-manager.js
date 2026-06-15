@@ -12,12 +12,39 @@
       'resources/audio/stars/sparkle2.mp3',
       'resources/audio/stars/sparkle3.wav',
     ],
+    'fireworks-pop': [
+      'resources/audio/fireworks/fireworks-pop1.mp3',
+      'resources/audio/fireworks/fireworks-pop2.mp3',
+      'resources/audio/fireworks/fireworks-pop3.mp3',
+      'resources/audio/fireworks/fireworks-pop4.mp3',
+      'resources/audio/fireworks/fireworks-pop5.mp3',
+      'resources/audio/fireworks/fireworks-pop6.mp3',
+      'resources/audio/fireworks/fireworks-pop7.mp3',
+      'resources/audio/fireworks/fireworks-pop8.mp3',
+      'resources/audio/fireworks/fireworks-pop9.mp3',
+      'resources/audio/fireworks/fireworks-pop10.mp3',
+      'resources/audio/fireworks/fireworks-pop11.mp3',
+    ],
   };
 
   const MAX_CONCURRENT = 8;
   const buffers = {};
   let audioCtx = null;
   let activeCount = 0;
+
+  function playCascade(options = {}) {
+    if (!audioCtx) return;
+    const intensity = Math.min(Math.max(options.intensity ?? 1, 0), 1);
+    // more charge = more pops, spread over a slightly wider window
+    const popCount = Math.round(4 + intensity * 14); // ~4 to 18 pops
+    const spread = 150 + intensity * 450; // ms window the pops land in
+    for (let i = 0; i < popCount; i++) {
+      const delay = Math.random() * spread;
+      setTimeout(() => {
+        play('fireworks-pop', { intensity: 0.35 + Math.random() * 0.65 });
+      }, delay);
+    }
+  }
 
   async function loadSound(id, url) {
     try {
@@ -76,7 +103,13 @@
     };
   }
 
-  EffectManager.on('sound', (data) => play(data.id, data));
+  EffectManager.on('sound', (data) => {
+    if (data.id === 'fireworks-cascade') {
+      playCascade(data);
+    } else {
+      play(data.id, data);
+    }
+  });
 
   window.addEventListener(
     'pointerdown',
@@ -87,5 +120,5 @@
     { once: true },
   );
 
-  window.SoundManager = { play };
+  window.SoundManager = { play, playCascade };
 })();
