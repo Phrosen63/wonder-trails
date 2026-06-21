@@ -3,11 +3,19 @@ const ctx = canvas.getContext('2d');
 
 const bgPicker = document.getElementById('bg-picker');
 let backgroundColor = '#000000';
+let userBackgroundColor = backgroundColor;
 document.body.style.background = backgroundColor;
 
 bgPicker.addEventListener('input', (e) => {
   backgroundColor = e.target.value;
+  userBackgroundColor = e.target.value;
   document.body.style.background = backgroundColor;
+});
+
+EffectManager.on('background-change', (data) => {
+  backgroundColor = data && data.color ? data.color : userBackgroundColor;
+  document.body.style.background = backgroundColor;
+  bgPicker.value = backgroundColor;
 });
 
 function resizeCanvas() {
