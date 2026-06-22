@@ -35,8 +35,8 @@
     if (!audioCtx) return;
     const intensity = Math.min(Math.max(options.intensity ?? 1, 0), 1);
     // more charge = more pops, spread over a slightly wider window
-    const popCount = Math.round(4 + intensity * 14); // ~4 to 18 pops
-    const spread = 150 + intensity * 450; // ms window the pops land in
+    const popCount = Math.round(10 + intensity * 30); // ~10 to 40 pops
+    const spread = 300 + intensity * 900; // ms window the pops land in
     for (let i = 0; i < popCount; i++) {
       const delay = Math.random() * spread;
       setTimeout(() => {
