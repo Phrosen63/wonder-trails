@@ -23,7 +23,6 @@
       'resources/audio/fireworks/fireworks-pop8.mp3',
       'resources/audio/fireworks/fireworks-pop9.mp3',
       'resources/audio/fireworks/fireworks-pop10.mp3',
-      'resources/audio/fireworks/fireworks-pop11.mp3',
     ],
   };
 
