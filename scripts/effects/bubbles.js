@@ -18,6 +18,8 @@
           spawnPerFrame: 1,
         };
 
+  let popCooldown = 0;
+
   function randRange(min, max) {
     return min + Math.random() * (max - min);
   }
@@ -45,10 +47,14 @@
         life: randRange(CONFIG.minLife, CONFIG.maxLife),
       });
     }
-    if (emit) emit('sound', { id: 'bubble-pop', x, y });
+    if (emit && popCooldown <= 0) {
+      emit('sound', { id: 'bubble-pop', x, y });
+      popCooldown = 0.13; // seconds between pops
+    }
   }
 
   function update(dt, pointer) {
+    if (popCooldown > 0) popCooldown -= dt;
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.age += dt;
