@@ -35,7 +35,7 @@
           stormRainDropSpeed: [500, 760],
           stormRainDropLength: [14, 28],
           lightningChancePerSecond: 0.42,
-          lightningFlashDecay: 4, // how fast the screen flash fades (per second)
+          lightningFlashDecay: 3.2, // how fast the screen flash fades (per second)
           boltLife: [0.2, 0.35],
         }
       : {
@@ -68,8 +68,8 @@
           stormAmbientRainPerSecond: 110,
           stormRainDropSpeed: [600, 900],
           stormRainDropLength: [18, 36],
-          lightningChancePerSecond: 0.55,
-          lightningFlashDecay: 4,
+          lightningChancePerSecond: 0.45,
+          lightningFlashDecay: 3.4,
           boltLife: [0.2, 0.35],
         };
 
@@ -93,23 +93,30 @@
   let pointerDownTime = null;
   let wasPointerActive = false;
   let visualStormCharge = 0;
+  let inputLocked = false;
+  let _emit = null;
 
   function randRange(min, max) {
     return min + Math.random() * (max - min);
   }
+
   function pick([min, max]) {
     return randRange(min, max);
   }
+
   function clamp01(t) {
     return Math.min(1, Math.max(0, t));
   }
+
   function lerp(a, b, t) {
     return a + (b - a) * t;
   }
+
   function hexToRgb(hex) {
     const n = parseInt(hex.replace('#', ''), 16);
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
   }
+
   function rgbToHex({ r, g, b }) {
     const c = (v) =>
       Math.round(Math.min(255, Math.max(0, v)))
@@ -117,6 +124,7 @@
         .padStart(2, '0');
     return `#${c(r)}${c(g)}${c(b)}`;
   }
+
   function lerpColor(a, b, t) {
     return { r: lerp(a.r, b.r, t), g: lerp(a.g, b.g, t), b: lerp(a.b, b.b, t) };
   }
@@ -136,6 +144,7 @@
     const altitudeFrac = pick(CONFIG.altitudeRange);
     const puffCount = Math.round(randRange(4, 7));
     const puffs = [];
+
     for (let i = 0; i < puffCount; i++) {
       puffs.push({
         ox: randRange(-0.5, 0.5),
@@ -143,6 +152,7 @@
         r: randRange(0.35, 0.65),
       });
     }
+
     return {
       // storm clouds spread edge-to-edge (and beyond); normal clouds stay fully on-screen
       baseX: isStorm
@@ -177,17 +187,20 @@
     cloud.y = cloud.baseY;
     clouds.push(cloud);
     state = 'forming';
+
     if (clouds.length >= CONFIG.cloudsToGather) {
       beginGathering();
     }
   }
 
   function beginGathering() {
+    inputLocked = true;
     state = 'gathering';
     phaseTimer = 0;
     const n = clouds.length;
     const spread = Math.min(window.innerWidth * 0.7, 120 * n);
     const startX = window.innerWidth / 2 - spread / 2;
+
     clouds.forEach((cloud, i) => {
       cloud.gatherFrom = { x: cloud.x, y: cloud.y };
       cloud.gatherX = startX + (spread * (i + 0.5)) / n + randRange(-15, 15);
@@ -198,15 +211,18 @@
   function beginRaining() {
     state = 'raining';
     phaseTimer = 0;
+    if (_emit) _emit('sound', { id: 'rain-loop-start' });
   }
 
   function beginClearing() {
     state = 'clearing';
     phaseTimer = 0;
     clouds.forEach((c) => (c.targetOpacity = 0));
+    if (_emit) _emit('sound', { id: 'rain-loop-stop' });
   }
 
   function reset() {
+    inputLocked = false;
     state = 'idle';
     clouds = [];
     raindrops = [];
@@ -235,12 +251,16 @@
     ambientRainTimer = 0;
     state = 'storm';
     phaseTimer = 0;
+
+    if (emit) emit('sound', { id: 'rain-loop-start' });
+
     for (let i = 0; i < CONFIG.stormCloudCount; i++) {
       const cloud = makeCloud({ storm: true });
       cloud.x = cloud.baseX;
       cloud.y = cloud.baseY;
       clouds.push(cloud);
     }
+
     if (emit) {
       emit('background-change', { color: STORM_DARK });
       emit('sound', { id: 'thunder-clap', intensity: 1 });
@@ -251,6 +271,7 @@
     state = 'storm-clearing';
     phaseTimer = 0;
     clouds.forEach((c) => (c.targetOpacity = 0));
+    if (_emit) _emit('sound', { id: 'rain-loop-stop' });
   }
 
   function triggerLightning(emit) {
@@ -261,12 +282,15 @@
     const segments = Math.round(randRange(5, 9));
     const points = [{ x: topX, y: startY }];
     let x = topX;
+
     for (let i = 1; i <= segments; i++) {
       const y = startY + ((endY - startY) * i) / segments;
       x += randRange(-40, 40);
       points.push({ x, y });
     }
+
     lightningBolts.push({ points, age: 0, life: pick(CONFIG.boltLife) });
+
     if (emit) emit('sound', { id: 'thunder-clap', intensity: randRange(0.6, 1) });
   }
 
@@ -285,16 +309,19 @@
   }
 
   function update(dt, pointer, emit) {
+    _emit = emit;
     elapsed += dt;
 
+    const activePointer = inputLocked ? { active: false, x: pointer.x, y: pointer.y } : pointer;
+
     // --- click vs hold detection (tap = add cloud, hold = storm) ---
-    if (pointer.active && !wasPointerActive) {
+    if (activePointer.active && !wasPointerActive) {
       pointerDownTime = elapsed;
     }
 
     stormCharge = 0;
 
-    if (pointer.active && pointerDownTime !== null) {
+    if (activePointer.active && pointerDownTime !== null) {
       const heldFor = elapsed - pointerDownTime;
 
       if (heldFor >= CONFIG.holdThresholdForStorm) {
@@ -321,7 +348,7 @@
       }
     }
 
-    if (!pointer.active && wasPointerActive && pointerDownTime !== null) {
+    if (!activePointer.active && wasPointerActive && pointerDownTime !== null) {
       const heldFor = elapsed - pointerDownTime;
 
       if (heldFor < CONFIG.holdThresholdForStorm) {
@@ -346,7 +373,7 @@
       }
     }
 
-    wasPointerActive = pointer.active;
+    wasPointerActive = activePointer.active;
 
     // --- per-cloud motion / tone ---
     const relevantClearDuration =

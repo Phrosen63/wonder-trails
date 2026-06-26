@@ -4,7 +4,8 @@
   const listeners = {};
 
   function on(eventName, callback) {
-    (listeners[eventName] = listeners[eventName] || []).push(callback);
+    const list = (listeners[eventName] = listeners[eventName] || []);
+    if (!list.includes(callback)) list.push(callback);
   }
 
   function off(eventName, callback) {
@@ -35,6 +36,7 @@
     }
 
     activeEffect = nextEffect;
+    emit('stop-all-loops');
     if (typeof activeEffect.activate === 'function') {
       activeEffect.activate(emit);
     }

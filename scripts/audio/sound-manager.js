@@ -24,12 +24,60 @@
       'resources/audio/fireworks/fireworks-pop9.mp3',
       'resources/audio/fireworks/fireworks-pop10.mp3',
     ],
+    rain: ['resources/audio/weather/rain.mp3'],
+    thunderclap: [
+      'resources/audio/weather/thunderclap1.mp3',
+      'resources/audio/weather/thunderclap2.mp3',
+      'resources/audio/weather/thunderclap3.mp3',
+    ],
   };
 
   const MAX_CONCURRENT = 8;
   const buffers = {};
   let audioCtx = null;
   let activeCount = 0;
+
+  const loops = {};
+
+  function playLoop(id, options = {}) {
+    if (!audioCtx) return;
+    if (loops[id]?.playing) return;
+    const buffer = pickBuffer(id);
+    if (!buffer) return;
+
+    const source = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    gain.gain.value = 0;
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+
+    // Fade in over 1.5 s
+    gain.gain.setTargetAtTime(options.volume ?? 0.55, audioCtx.currentTime, 0.5);
+
+    loops[id] = { source, gain, playing: true };
+  }
+
+  function stopLoop(id, fadeDuration = 2.0) {
+    const loop = loops[id];
+    if (!loop || !loop.playing) return;
+    loop.playing = false;
+
+    const gain = loop.gain;
+    const source = loop.source;
+    // Fade out, then stop
+    gain.gain.setTargetAtTime(0, audioCtx.currentTime, fadeDuration / 4);
+    setTimeout(() => {
+      try {
+        source.stop();
+      } catch (_) {}
+      source.disconnect();
+      gain.disconnect();
+    }, fadeDuration * 1000);
+    delete loops[id];
+  }
 
   function playCascade(options = {}) {
     if (!audioCtx) return;
@@ -105,9 +153,19 @@
   EffectManager.on('sound', (data) => {
     if (data.id === 'fireworks-cascade') {
       playCascade(data);
+    } else if (data.id === 'rain-loop-start') {
+      playLoop('rain', { volume: 0.55 });
+    } else if (data.id === 'rain-loop-stop') {
+      stopLoop('rain', 2.5);
+    } else if (data.id === 'thunder-clap') {
+      play('thunderclap', data);
     } else {
       play(data.id, data);
     }
+  });
+
+  EffectManager.on('stop-all-loops', () => {
+    Object.keys(loops).forEach((id) => stopLoop(id, 1.0));
   });
 
   window.addEventListener(
