@@ -34,5 +34,4 @@
   }
 
   EffectManager.on('effect-change', ({ name }) => setActive(name));
-  setActive(effects[0][0]);
 })();

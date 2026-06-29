@@ -21,10 +21,6 @@
 
   function register(name, effect) {
     effects[name] = effect;
-
-    if (!activeEffect) {
-      activeEffect = effect;
-    }
   }
 
   function setEffect(name) {
