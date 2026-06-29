@@ -1,5 +1,11 @@
 (function () {
-  const DEFAULT_BACKGROUND_COLOR = '#000000';
+  const SKY_BLUE = '#87ceeb';
+  const STORM_SKY = '#4b5563';
+  const STORM_DARK = '#171a21';
+  const CLOUD_WHITE = { r: 255, g: 255, b: 255 };
+  const CLOUD_DARK = { r: 71, g: 75, b: 84 };
+
+  const DEFAULT_BACKGROUND_COLOR = SKY_BLUE;
 
   const CONFIG =
     window.innerWidth <= 768
@@ -71,12 +77,6 @@
           lightningFlashDecay: 3.4,
           boltLife: [0.2, 0.35],
         };
-
-  const SKY_BLUE = '#87ceeb';
-  const STORM_SKY = '#4b5563';
-  const STORM_DARK = '#171a21';
-  const CLOUD_WHITE = { r: 255, g: 255, b: 255 };
-  const CLOUD_DARK = { r: 71, g: 75, b: 84 };
 
   // idle -> forming -> gathering -> raining -> clearing -> idle
   // idle -> storm -> storm-clearing -> idle   (triggered by click-and-hold)
@@ -295,7 +295,7 @@
 
   function activate(emit) {
     reset();
-    if (emit) emit('background-change', { color: SKY_BLUE });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate(emit) {
