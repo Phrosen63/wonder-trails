@@ -39,11 +39,8 @@
           maxStragglers: 5,
         };
 
-  let chargeTime = 0;
-  let charging = false;
-  let chargeTickTimer = CONFIG.chargeBurstInterval;
-  let autoReleaseTimer = 0;
-  let hasAutoReleased = false;
+  // Map of pointerId -> { x, y, chargeTime, charging, chargeTickTimer, autoReleaseTimer, hasAutoReleased }
+  const activePointers = new Map();
   const stragglers = [];
 
   function randRange(min, max) {
@@ -62,22 +59,14 @@
   }
 
   function activate(emit) {
-    chargeTime = 0;
-    charging = false;
-    chargeTickTimer = CONFIG.chargeBurstInterval;
-    autoReleaseTimer = 0;
-    hasAutoReleased = false;
+    activePointers.clear();
     stragglers.length = 0;
     if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {
     particles.length = 0;
-    chargeTime = 0;
-    charging = false;
-    chargeTickTimer = CONFIG.chargeBurstInterval;
-    autoReleaseTimer = 0;
-    hasAutoReleased = false;
+    activePointers.clear();
     stragglers.length = 0;
   }
 
@@ -103,7 +92,7 @@
     // No-op: handled by tap/charge logic in update().
   }
 
-  function triggerCascade(emit) {
+  function triggerCascade(chargeTime, emit) {
     const ratio = chargeTime / CONFIG.maxChargeTime;
     const burstCount = Math.round(CONFIG.minBursts + (CONFIG.maxBursts - CONFIG.minBursts) * ratio);
     const margin = 60;
@@ -126,52 +115,72 @@
   }
 
   function update(dt, pointer, emit) {
-    if (pointer.active && !hasAutoReleased) {
-      charging = true;
-      chargeTime = Math.min(chargeTime + dt, CONFIG.maxChargeTime);
+    const currentIds = new Set((window.pointers || []).map((p) => p.id));
 
-      // Small random fireworks while charging.
-      chargeTickTimer -= dt;
-      if (chargeTickTimer <= 0) {
+    // Add newly pressed pointers
+    for (const p of window.pointers || []) {
+      if (!activePointers.has(p.id)) {
+        activePointers.set(p.id, {
+          x: p.x,
+          y: p.y,
+          chargeTime: 0,
+          charging: true,
+          chargeTickTimer: CONFIG.chargeBurstInterval,
+          autoReleaseTimer: 0,
+          hasAutoReleased: false,
+        });
+      } else {
+        // Update position
+        const state = activePointers.get(p.id);
+        state.x = p.x;
+        state.y = p.y;
+      }
+    }
+
+    // Process released pointers (in activePointers but no longer in currentIds)
+    for (const [id, state] of activePointers) {
+      if (!currentIds.has(id)) {
+        if (state.charging) {
+          if (state.chargeTime < CONFIG.tapThreshold) {
+            createBurst(state.x, state.y);
+            if (emit) emit('sound', { id: 'fireworks-pop', x: state.x, y: state.y, intensity: 1 });
+          } else {
+            triggerCascade(state.chargeTime, emit);
+            scheduleStragglers();
+          }
+        }
+        activePointers.delete(id);
+      }
+    }
+
+    // Update each active pointer's charge state
+    for (const [, state] of activePointers) {
+      if (state.hasAutoReleased) continue;
+
+      state.chargeTime = Math.min(state.chargeTime + dt, CONFIG.maxChargeTime);
+
+      state.chargeTickTimer -= dt;
+      if (state.chargeTickTimer <= 0) {
         const { x, y } = randomScreenPos(60);
         createBurst(x, y);
         if (emit) emit('sound', { id: 'fireworks-pop', x, y, intensity: 0.6 });
-        chargeTickTimer += CONFIG.chargeBurstInterval;
+        state.chargeTickTimer += CONFIG.chargeBurstInterval;
       }
 
-      // Auto-release if fully charged and held a bit longer.
-      if (chargeTime >= CONFIG.maxChargeTime) {
-        autoReleaseTimer += dt;
-        if (autoReleaseTimer >= CONFIG.autoReleaseDelay) {
-          triggerCascade(emit);
+      if (state.chargeTime >= CONFIG.maxChargeTime) {
+        state.autoReleaseTimer += dt;
+        if (state.autoReleaseTimer >= CONFIG.autoReleaseDelay) {
+          triggerCascade(state.chargeTime, emit);
           scheduleStragglers();
-          hasAutoReleased = true;
-          charging = false;
-          chargeTime = 0;
-          autoReleaseTimer = 0;
+          state.hasAutoReleased = true;
+          state.charging = false;
+          state.chargeTime = 0;
+          state.autoReleaseTimer = 0;
         }
       }
-    } else if (!pointer.active) {
-      if (charging) {
-        if (chargeTime < CONFIG.tapThreshold) {
-          // Quick tap: a single firework right where the user clicked.
-          createBurst(pointer.x, pointer.y);
-          if (emit)
-            emit('sound', { id: 'fireworks-pop', x: pointer.x, y: pointer.y, intensity: 1 });
-        } else {
-          triggerCascade(emit);
-          scheduleStragglers();
-        }
-      }
-      charging = false;
-      chargeTime = 0;
-      chargeTickTimer = CONFIG.chargeBurstInterval;
-      autoReleaseTimer = 0;
-      hasAutoReleased = false;
     }
-    // else: pointer still down after auto-release — wait for lift-off to reset.
 
-    // Fire off any pending stragglers.
+    // Stragglers
     for (let i = stragglers.length - 1; i >= 0; i--) {
       const s = stragglers[i];
       s.timer -= dt;
@@ -182,6 +191,7 @@
       }
     }
 
+    // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.age += dt;
@@ -191,14 +201,13 @@
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      // gravity
       p.vy += 120 * dt;
       p.vx *= 0.99;
       p.vy *= 0.99;
     }
   }
 
-  function draw(ctx, pointer) {
+  function draw(ctx) {
     for (const p of particles) {
       const lifeRatio = 1 - p.age / p.life;
       ctx.save();
@@ -211,12 +220,15 @@
       ctx.stroke();
       ctx.restore();
     }
-    if (charging && pointer.active && chargeTime >= CONFIG.tapThreshold) {
-      const ratio = chargeTime / CONFIG.maxChargeTime;
+    // Draw charge ring for each active pointer
+    for (const [, state] of activePointers) {
+      if (!state.charging || state.hasAutoReleased) continue;
+      if (state.chargeTime < CONFIG.tapThreshold) continue;
+      const ratio = state.chargeTime / CONFIG.maxChargeTime;
       ctx.save();
       ctx.globalAlpha = 0.5 + ratio * 0.5;
       ctx.beginPath();
-      ctx.arc(pointer.x, pointer.y, 10 + ratio * 40, 0, Math.PI * 2);
+      ctx.arc(state.x, state.y, 10 + ratio * 40, 0, Math.PI * 2);
       ctx.strokeStyle = `hsl(${(performance.now() / 5) % 360}, 100%, 60%)`;
       ctx.lineWidth = 3 + ratio * 5;
       ctx.stroke();

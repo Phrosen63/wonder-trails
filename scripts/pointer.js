@@ -1,8 +1,10 @@
 window.pointer = {
   x: 0,
   y: 0,
-  active: false, // true while a touch/mouse-button is down
+  active: false,
 };
+
+window.pointers = [];
 
 (function () {
   function isUIElement(target) {
@@ -15,32 +17,35 @@ window.pointer = {
     pointer.active = active;
   }
 
-  // --- Mouse events (for desktop development) ---
+  function touchesToPointers(touches) {
+    return Array.from(touches).map((t) => ({ id: t.identifier, x: t.clientX, y: t.clientY }));
+  }
+
   window.addEventListener('mousemove', (e) => {
     if (isUIElement(e.target)) return;
-
     setPointer(e.clientX, e.clientY, pointer.active);
+    if (pointer.active) window.pointers = [{ id: 'mouse', x: e.clientX, y: e.clientY }];
   });
 
   window.addEventListener('mousedown', (e) => {
     if (isUIElement(e.target)) return;
-
     setPointer(e.clientX, e.clientY, true);
+    window.pointers = [{ id: 'mouse', x: e.clientX, y: e.clientY }];
   });
 
   window.addEventListener('mouseup', (e) => {
     setPointer(e.clientX, e.clientY, false);
+    window.pointers = [];
   });
 
   // --- Touch events (for mobile) ---
-  // Using the first touch point only, since this is meant to be
-  // a single-finger interaction for young children.
   window.addEventListener(
     'touchstart',
     (e) => {
       if (isUIElement(e.target)) return;
       const t = e.touches[0];
       setPointer(t.clientX, t.clientY, true);
+      window.pointers = touchesToPointers(e.touches);
     },
     { passive: true },
   );
@@ -51,6 +56,7 @@ window.pointer = {
       if (isUIElement(e.target)) return;
       const t = e.touches[0];
       setPointer(t.clientX, t.clientY, true);
+      window.pointers = touchesToPointers(e.touches);
     },
     { passive: true },
   );
@@ -58,7 +64,15 @@ window.pointer = {
   window.addEventListener(
     'touchend',
     (e) => {
-      setPointer(pointer.x, pointer.y, false);
+      // e.touches only contains *still-active* touches after the finger lifts
+      if (e.touches.length === 0) {
+        setPointer(pointer.x, pointer.y, false);
+        window.pointers = [];
+      } else {
+        const t = e.touches[0];
+        setPointer(t.clientX, t.clientY, true);
+        window.pointers = touchesToPointers(e.touches);
+      }
     },
     { passive: true },
   );
@@ -67,6 +81,7 @@ window.pointer = {
     'touchcancel',
     (e) => {
       setPointer(pointer.x, pointer.y, false);
+      window.pointers = [];
     },
     { passive: true },
   );

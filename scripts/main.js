@@ -68,7 +68,7 @@ function render(now) {
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
   if (pointer.active) {
-    EffectManager.spawn(pointer.x, pointer.y);
+    EffectManager.spawn(window.pointers);
   }
 
   EffectManager.update(dt);

@@ -39,9 +39,11 @@
     emit('effect-change', { name });
   }
 
-  function spawn(x, y) {
-    if (!activeEffect) return;
-    activeEffect.spawn(x, y, emit);
+  function spawn(pointers) {
+    if (!activeEffect || !pointers) return;
+    for (const { x, y } of pointers) {
+      activeEffect.spawn(x, y, emit);
+    }
   }
 
   function update(dt) {
