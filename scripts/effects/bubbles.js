@@ -1,5 +1,6 @@
 (function () {
   const particles = [];
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
 
   const CONFIG =
     window.innerWidth <= 768
@@ -29,7 +30,7 @@
   }
 
   function activate(emit) {
-    if (emit) emit('background-change', { color: '#000' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

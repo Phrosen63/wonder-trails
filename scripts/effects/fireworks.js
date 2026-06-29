@@ -1,5 +1,7 @@
 (function () {
   const particles = [];
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
+
   const CONFIG =
     window.innerWidth <= 768
       ? {
@@ -66,7 +68,7 @@
     autoReleaseTimer = 0;
     hasAutoReleased = false;
     stragglers.length = 0;
-    if (emit) emit('background-change', { color: '#000' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

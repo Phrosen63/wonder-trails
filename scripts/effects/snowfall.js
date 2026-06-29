@@ -1,5 +1,7 @@
 (function () {
   const particles = [];
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
+
   const COLS = 200;
   let colWidth = 1;
   let heights = [];
@@ -43,7 +45,7 @@
   function activate(emit) {
     particles.length = 0;
     initHeights();
-    if (emit) emit('background-change', { color: '#000' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

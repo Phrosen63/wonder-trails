@@ -1,5 +1,6 @@
 (function () {
   const points = [];
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
 
   const CONFIG = {
     maxPoints: 90,
@@ -12,7 +13,7 @@
 
   function activate(emit) {
     points.length = 0;
-    if (emit) emit('background-change', { color: '#000' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

@@ -1,5 +1,7 @@
 (function () {
   const particles = [];
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
+
   const CONFIG = {
     minSize: 8,
     maxSize: 18,
@@ -23,7 +25,7 @@
   let superStar = null; // null = not active
 
   function activate(emit) {
-    if (emit) emit('background-change', { color: '#000' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

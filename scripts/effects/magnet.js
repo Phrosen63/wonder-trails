@@ -1,5 +1,6 @@
 (function () {
   const specks = [];
+  const DEFAULT_BACKGROUND_COLOR = '#f9c468';
 
   const COLORS = [
     '#1A1A2E', // deep indigo-black
@@ -77,7 +78,7 @@
         color: hexToRgb(hex),
       });
     }
-    if (emit) emit('background-change', { color: '#f9c468' });
+    if (emit) emit('background-change', { color: DEFAULT_BACKGROUND_COLOR });
   }
 
   function deactivate() {

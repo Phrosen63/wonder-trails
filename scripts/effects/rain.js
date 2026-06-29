@@ -1,7 +1,6 @@
 (function () {
-  // ---------------------------------------------------------------------
-  // CONFIG — separate tuning for desktop vs mobile, same idea as fireworks.js
-  // ---------------------------------------------------------------------
+  const DEFAULT_BACKGROUND_COLOR = '#000000';
+
   const CONFIG =
     window.innerWidth <= 768
       ? {
