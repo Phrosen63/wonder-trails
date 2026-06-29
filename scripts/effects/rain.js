@@ -128,16 +128,11 @@
     return { r: lerp(a.r, b.r, t), g: lerp(a.g, b.g, t), b: lerp(a.b, b.b, t) };
   }
 
-  // -----------------------------------------------------------------------
-  // Cloud factory — each cloud gets randomized size/altitude/speed/amplitude/
-  // depth/puff-shape so no two ever look or move quite the same.
-  // Pass { storm: true } for the rapid, already-dark storm variant.
-  // -----------------------------------------------------------------------
   function makeCloud(options = {}) {
     const isStorm = !!options.storm;
     const widthRange = isStorm ? CONFIG.stormCloudWidth : CONFIG.cloudWidth;
     const heightRange = isStorm ? CONFIG.stormCloudHeight : CONFIG.cloudHeight;
-    const depth = pick(CONFIG.depthRange); // 0..1, "distance" from viewer
+    const depth = pick(CONFIG.depthRange);
     const width = pick(widthRange) * depth;
     const height = pick(heightRange) * depth;
     const altitudeFrac = pick(CONFIG.altitudeRange);
@@ -153,7 +148,6 @@
     }
 
     return {
-      // storm clouds spread edge-to-edge (and beyond); normal clouds stay fully on-screen
       baseX: isStorm
         ? randRange(0, window.innerWidth)
         : randRange(width, Math.max(width, window.innerWidth - width)),
@@ -169,7 +163,7 @@
       bobAmplitude: randRange(4, 12),
       bobFrequency: randRange(0.15, 0.4),
       puffs,
-      tone: isStorm ? 1 : 0, // 0 = white & fluffy, 1 = dark storm grey
+      tone: isStorm ? 1 : 0,
       opacity: 0,
       targetOpacity: 1,
       gatherX: 0,
@@ -235,14 +229,8 @@
     wasPointerActive = false;
   }
 
-  // -------------------------------------------------------------------
-  // Click-and-hold storm: darkens the sky fast, rapidly spawns a crowd of
-  // dark storm clouds across the whole screen, rains heavily (both under
-  // clouds and ambiently everywhere), and throws the occasional lightning
-  // bolt with a screen flash.
-  // -------------------------------------------------------------------
   function triggerStorm(emit) {
-    if (state === 'storm' || state === 'storm-clearing') return; // already storming
+    if (state === 'storm' || state === 'storm-clearing') return;
     clouds = [];
     raindrops = [];
     lightningBolts = [];
@@ -300,26 +288,21 @@
 
   function deactivate(emit) {
     reset();
-    if (emit) emit('background-change', null); // hand background back to the user's picker
+    if (emit) emit('background-change', null);
   }
 
-  function spawn() {
-    // No-op: clicks/holds are handled via pointer-edge detection in update().
-  }
+  function spawn() {}
 
   function update(dt, pointer, emit) {
     _emit = emit;
     elapsed += dt;
-
     const activePointer = inputLocked ? { active: false, x: pointer.x, y: pointer.y } : pointer;
 
-    // --- click vs hold detection (tap = add cloud, hold = storm) ---
     if (activePointer.active && !wasPointerActive) {
       pointerDownTime = elapsed;
     }
 
     stormCharge = 0;
-
     if (activePointer.active && pointerDownTime !== null) {
       const heldFor = elapsed - pointerDownTime;
 
@@ -330,9 +313,7 @@
         visualStormCharge = 0;
       } else {
         stormCharge = clamp01(heldFor / CONFIG.holdThresholdForStorm);
-
         const visualHeldFor = Math.max(0, heldFor - CONFIG.stormChargeVisualDelay);
-
         visualStormCharge = clamp01(
           visualHeldFor / (CONFIG.holdThresholdForStorm - CONFIG.stormChargeVisualDelay),
         );
@@ -373,25 +354,24 @@
     }
 
     wasPointerActive = activePointer.active;
-
-    // --- per-cloud motion / tone ---
     const relevantClearDuration =
       state === 'storm-clearing' ? CONFIG.stormClearDuration : CONFIG.clearDuration;
+
     clouds.forEach((cloud) => {
       if (cloud.appearAt !== undefined && elapsed < cloud.appearAt) {
-        return; // hasn't popped in yet
+        return;
       }
       const fadeRate =
         cloud.targetOpacity > cloud.opacity
           ? dt * 3
           : state === 'storm-clearing'
-            ? dt * 4
-            : dt / Math.max(0.5, relevantClearDuration * 0.6);
+            ? dt * 5.5
+            : dt * 5.5;
       cloud.opacity += (cloud.targetOpacity - cloud.opacity) * Math.min(1, fadeRate);
 
       if (state === 'gathering') {
         const t = clamp01(phaseTimer / CONFIG.gatherDuration);
-        const eased = t * t * (3 - 2 * t); // smoothstep
+        const eased = t * t * (3 - 2 * t);
         cloud.x = lerp(cloud.gatherFrom.x, cloud.gatherX, eased);
         cloud.y = lerp(cloud.gatherFrom.y, cloud.gatherY, eased);
         cloud.tone = eased;
@@ -400,14 +380,12 @@
         cloud.y = cloud.gatherY;
         cloud.tone = state === 'clearing' ? Math.max(0, 1 - phaseTimer / CONFIG.clearDuration) : 1;
       } else {
-        // idle, forming, storm, storm-clearing: sway around its base position
         cloud.x = cloud.baseX + Math.sin(elapsed * cloud.frequency + cloud.phase) * cloud.amplitude;
         cloud.y =
           cloud.baseY + Math.sin(elapsed * cloud.bobFrequency + cloud.phase) * cloud.bobAmplitude;
       }
     });
 
-    // --- phase transitions ---
     if (state === 'gathering') {
       phaseTimer += dt;
       if (phaseTimer >= CONFIG.gatherDuration) beginRaining();
@@ -426,28 +404,39 @@
           });
         }
       });
+
       if (phaseTimer >= CONFIG.rainDuration) beginClearing();
     } else if (state === 'clearing') {
       phaseTimer += dt;
       const allFaded = clouds.every((c) => c.opacity < 0.02);
+
       if (phaseTimer >= CONFIG.clearDuration && allFaded && raindrops.length === 0) {
         reset();
         if (emit) emit('background-change', { color: SKY_BLUE });
       }
     } else if (state === 'storm') {
       phaseTimer += dt;
-      // dense ambient rain anywhere on screen, not just under clouds
+      // ambient rain: pick a random visible cloud as the spawn source instead of the top of the screen
       ambientRainTimer -= dt;
+
       if (ambientRainTimer <= 0) {
         ambientRainTimer = 1 / CONFIG.stormAmbientRainPerSecond;
-        raindrops.push({
-          x: randRange(0, window.innerWidth),
-          y: randRange(-60, window.innerHeight * 0.25),
-          vy: pick(CONFIG.stormRainDropSpeed),
-          length: pick(CONFIG.stormRainDropLength),
-          opacity: randRange(0.5, 0.85),
-        });
+        const visibleClouds = clouds.filter(
+          (c) => c.appearAt === undefined || elapsed >= c.appearAt,
+        );
+
+        if (visibleClouds.length > 0) {
+          const src = visibleClouds[Math.floor(Math.random() * visibleClouds.length)];
+          raindrops.push({
+            x: src.x + randRange(-src.width * 0.5, src.width * 0.5),
+            y: src.y + src.height * 0.3,
+            vy: pick(CONFIG.stormRainDropSpeed),
+            length: pick(CONFIG.stormRainDropLength),
+            opacity: randRange(0.5, 0.85),
+          });
+        }
       }
+
       // heavy rain under each storm cloud
       clouds.forEach((cloud) => {
         if (cloud.appearAt !== undefined && elapsed < cloud.appearAt) return;
@@ -463,13 +452,14 @@
           });
         }
       });
+
       if (Math.random() < CONFIG.lightningChancePerSecond * dt) {
         triggerLightning(emit);
       }
+
       if (phaseTimer >= CONFIG.stormDuration) beginStormClearing();
     } else if (state === 'storm-clearing') {
       phaseTimer += dt;
-
       const allFaded = clouds.every((c) => c.opacity < 0.02);
 
       if (
@@ -479,7 +469,6 @@
         lightningBolts.length === 0
       ) {
         reset();
-
         if (emit) {
           emit('background-change', {
             color: SKY_BLUE,
@@ -488,7 +477,6 @@
       }
     }
 
-    // --- background color interpolation during gentle transitions ---
     if (emit) {
       if (state === 'gathering') {
         const t = clamp01(phaseTimer / CONFIG.gatherDuration);
@@ -506,17 +494,14 @@
           color: rgbToHex(lerpColor(hexToRgb(STORM_DARK), hexToRgb(SKY_BLUE), t)),
         });
       }
-      // 'storm' itself snaps straight to STORM_DARK on trigger — sudden, not eased.
     }
 
-    // --- raindrop physics ---
     for (let i = raindrops.length - 1; i >= 0; i--) {
       const d = raindrops[i];
       d.y += d.vy * dt;
       if (d.y - d.length > window.innerHeight) raindrops.splice(i, 1);
     }
 
-    // --- lightning lifecycle ---
     flashIntensity = Math.max(0, flashIntensity - CONFIG.lightningFlashDecay * dt);
     for (let i = lightningBolts.length - 1; i >= 0; i--) {
       const bolt = lightningBolts[i];
@@ -571,9 +556,7 @@
   function draw(ctx, pointer) {
     const x = pointer.x;
     const y = pointer.y;
-
     clouds.forEach((cloud) => drawCloud(ctx, cloud));
-
     ctx.save();
     ctx.strokeStyle = 'rgba(210, 230, 245, 0.7)';
     ctx.lineCap = 'round';
@@ -586,30 +569,23 @@
       ctx.stroke();
     }
     ctx.restore();
-
     drawLightning(ctx);
 
     if (visualStormCharge > 0 && state !== 'storm' && state !== 'storm-clearing') {
       const radius = 18 + visualStormCharge * 35;
-
       ctx.save();
-
       ctx.globalAlpha = 0.35 + visualStormCharge * 0.4;
       ctx.strokeStyle = '#cfdfff';
       ctx.lineWidth = 3;
-
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.globalAlpha = 1;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 5;
-
       ctx.beginPath();
       ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * visualStormCharge);
       ctx.stroke();
-
       ctx.restore();
     }
   }
