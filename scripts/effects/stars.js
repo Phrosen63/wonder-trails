@@ -22,7 +22,10 @@
   let spawnCount = 0;
   let superStar = null; // null = not active
 
-  function activate() {}
+  function activate(emit) {
+    if (emit) emit('background-change', { color: '#000' });
+  }
+
   function deactivate() {
     particles.length = 0;
     superStar = null;

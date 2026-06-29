@@ -36,6 +36,7 @@
           minStragglers: 2,
           maxStragglers: 5,
         };
+
   let chargeTime = 0;
   let charging = false;
   let chargeTickTimer = CONFIG.chargeBurstInterval;
@@ -46,23 +47,28 @@
   function randRange(min, max) {
     return min + Math.random() * (max - min);
   }
+
   function randomHue() {
     return Math.floor(Math.random() * 360);
   }
+
   function randomScreenPos(margin) {
     return {
       x: randRange(margin, window.innerWidth - margin),
       y: randRange(margin, window.innerHeight - margin),
     };
   }
-  function activate() {
+
+  function activate(emit) {
     chargeTime = 0;
     charging = false;
     chargeTickTimer = CONFIG.chargeBurstInterval;
     autoReleaseTimer = 0;
     hasAutoReleased = false;
     stragglers.length = 0;
+    if (emit) emit('background-change', { color: '#000' });
   }
+
   function deactivate() {
     particles.length = 0;
     chargeTime = 0;
@@ -72,6 +78,7 @@
     hasAutoReleased = false;
     stragglers.length = 0;
   }
+
   function createBurst(x, y) {
     const hue = randomHue();
     for (let i = 0; i < CONFIG.particlesPerBurst; i++) {
@@ -89,19 +96,24 @@
       });
     }
   }
+
   function spawn() {
     // No-op: handled by tap/charge logic in update().
   }
+
   function triggerCascade(emit) {
     const ratio = chargeTime / CONFIG.maxChargeTime;
     const burstCount = Math.round(CONFIG.minBursts + (CONFIG.maxBursts - CONFIG.minBursts) * ratio);
     const margin = 60;
+
     for (let i = 0; i < burstCount; i++) {
       const { x, y } = randomScreenPos(margin);
       createBurst(x, y);
     }
+
     if (emit) emit('sound', { id: 'firework-cascade', intensity: ratio });
   }
+
   function scheduleStragglers() {
     const margin = 60;
     const count = Math.round(randRange(CONFIG.minStragglers, CONFIG.maxStragglers + 1));
@@ -110,6 +122,7 @@
       stragglers.push({ x, y, timer: randRange(0.15, 0.7) });
     }
   }
+
   function update(dt, pointer, emit) {
     if (pointer.active && !hasAutoReleased) {
       charging = true;
@@ -182,6 +195,7 @@
       p.vy *= 0.99;
     }
   }
+
   function draw(ctx, pointer) {
     for (const p of particles) {
       const lifeRatio = 1 - p.age / p.life;
@@ -207,6 +221,7 @@
       ctx.restore();
     }
   }
+
   EffectManager.register('fireworks', {
     activate,
     deactivate,

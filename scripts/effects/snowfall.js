@@ -40,9 +40,10 @@
     heights = new Array(COLS).fill(0);
   }
 
-  function activate() {
+  function activate(emit) {
     particles.length = 0;
     initHeights();
+    if (emit) emit('background-change', { color: '#000' });
   }
 
   function deactivate() {

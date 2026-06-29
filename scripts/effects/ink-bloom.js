@@ -22,8 +22,9 @@
 
   let hue = 0;
 
-  function activate() {
+  function activate(emit) {
     blooms.length = 0;
+    if (emit) emit('background-change', { color: '#000' });
   }
 
   function deactivate() {

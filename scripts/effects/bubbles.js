@@ -28,7 +28,9 @@
     return Math.floor(Math.random() * 360);
   }
 
-  function activate() {}
+  function activate(emit) {
+    if (emit) emit('background-change', { color: '#000' });
+  }
 
   function deactivate() {
     particles.length = 0;
